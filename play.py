@@ -13,10 +13,10 @@ MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
 LR = 0.001
 
-w = 400
-h = 400
+w = 1200
+h = 800
 
-LOAD = 0
+LOAD = 1
 
 class Agent:
 
@@ -196,7 +196,7 @@ class Agent:
         # random moves: tradeoff exploration / exploitation
         self.epsilon = 80 - self.n_games
         final_move = [0,0,0]
-        if random.randint(0, 200) < self.epsilon:
+        if random.randint(0, 200) < self.epsilon and not LOAD:
             move = random.randint(0, 2)
             final_move[move] = 1
         else:

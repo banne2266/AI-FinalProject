@@ -11,12 +11,13 @@ os.environ["KMP_DUPLICATE_LIB_OK"]  =  "TRUE"
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
-LR = 0.001
+LR = 0.0001
 
-w = 1200
-h = 800
+w = 640
+h = 640
 
-LOAD = 1
+LOAD = 0
+SAVE = 1
 
 class Agent:
 
@@ -25,7 +26,7 @@ class Agent:
         self.epsilon = 0 # randomness
         self.gamma = 0.8 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Linear_QNet(38, 256, 3)
+        self.model = Linear_QNet(28, 256, 3)
         if load:
             print("====================LOAD MODEL====================")
             self.model.load_state_dict(torch.load('./model/model.pth'))
@@ -61,106 +62,87 @@ class Agent:
             incross = (abs(x_diff) == abs(y_diff))
             if snake_part[0] == 0:
                 if cur.x == head.x and cur.y > head.y:
-                    snake_part[0] = 1
-
+                    snake_part[0] = cur.y - head.y
+            else:
+                snake_part[0] = min(cur.y - head.y, snake_part[0])
             if snake_part[1] == 0:
                 if cur.x == head.x and cur.y < head.y:
-                    snake_part[1] = 1
+                    snake_part[1] = head.y - cur.y
+            else:
+                snake_part[1] = min(head.y - cur.y, snake_part[1])
 
             if snake_part[2] == 0:
                 if cur.y == head.y and cur.x > head.x:
-                    snake_part[2] = 1
+                    snake_part[2] = cur.x - head.x
+            else:
+                snake_part[2] = min(cur.x - head.x, snake_part[2])
 
             if snake_part[3] == 0:
                 if cur.y == head.y and cur.x < head.x:
-                    snake_part[3] = 1
+                    snake_part[3] = head.x - cur.x
+            else:
+                snake_part[3] = min(head.x - cur.x, snake_part[3])
 
             if snake_part[4] == 0:
                 if incross and x_diff > 0:
-                    snake_part[4] = 1
+                    snake_part[4] = x_diff * 1.414
+            else:
+                snake_part[4] = min(x_diff * 1.414, snake_part[4])
 
             if snake_part[5] == 0:
                 if incross and x_diff < 0:
-                    snake_part[5] = 1
+                    snake_part[5] = -x_diff * 1.414
+            else:
+                snake_part[5] = min(-x_diff * 1.414, snake_part[5])
                     
             if snake_part[6] == 0:
                 if incross and y_diff > 0:
-                    snake_part[6] = 1
+                    snake_part[6] = y_diff * 1.414
+            else:
+                snake_part[6] = min(y_diff * 1.414, snake_part[6])
 
             if snake_part[7] == 0:
                 if incross and y_diff < 0:
-                    snake_part[7] = 1
+                    snake_part[7] = -y_diff * 1.414
+            else:
+                snake_part[7] = min(-y_diff * 1.414, snake_part[7])
+            
+        food_part = [0] * 8
+        #tail vision
+        if(game.food.x == head.x) and (game.food.y > head.y):
+            food_part[0] = game.food.y - head.y
+        if(game.food.x == head.x) and (game.food.y < head.y): 
+            food_part[1] = -game.food.y + head.y
+        if(game.food.y == head.y) and (game.food.x > head.x): 
+            food_part[2] = game.food.x - head.x
+        if(game.food.y == head.y) and (game.food.x < head.x): 
+            food_part[3] = -game.food.x + head.x
+        
+        if food_incross and (x_diff_food > 0):
+            food_part[4] = x_diff_food * 1.414
+        if food_incross and (x_diff_food < 0): 
+            food_part[5] = -x_diff_food*1.414
+        if food_incross and (y_diff_food > 0): 
+            food_part[6] = y_diff_food * 1.414
+        if food_incross and (y_diff_food < 0):
+            food_part[7] = -y_diff_food * 1.414
 
         state = [
-            # Danger straight
-            (dir_r and game.hits_itself(point_r)) or 
-            (dir_l and game.hits_itself(point_l)) or 
-            (dir_u and game.hits_itself(point_u)) or 
-            (dir_d and game.hits_itself(point_d)),
-
-            # Danger right
-            (dir_u and game.hits_itself(point_r)) or 
-            (dir_d and game.hits_itself(point_l)) or 
-            (dir_l and game.hits_itself(point_u)) or 
-            (dir_r and game.hits_itself(point_d)),
-
-            # Danger left
-            (dir_d and game.hits_itself(point_r)) or 
-            (dir_u and game.hits_itself(point_l)) or 
-            (dir_r and game.hits_itself(point_u)) or 
-            (dir_l and game.hits_itself(point_d)),
-
-            # Danger straight
-            (dir_r and game.hits_boundary(point_r)) or 
-            (dir_l and game.hits_boundary(point_l)) or 
-            (dir_u and game.hits_boundary(point_u)) or 
-            (dir_d and game.hits_boundary(point_d)),
-
-            # Danger right
-            (dir_u and game.hits_boundary(point_r)) or 
-            (dir_d and game.hits_boundary(point_l)) or 
-            (dir_l and game.hits_boundary(point_u)) or 
-            (dir_r and game.hits_boundary(point_d)),
-
-            # Danger left
-            (dir_d and game.hits_boundary(point_r)) or 
-            (dir_u and game.hits_boundary(point_l)) or 
-            (dir_r and game.hits_boundary(point_u)) or 
-            (dir_l and game.hits_boundary(point_d)),
             
             # Move direction
             dir_l,
             dir_r,
             dir_u,
             dir_d,
-            
-            # Food location 
-            game.food.x < game.head.x,  # food left
-            game.food.x > game.head.x,  # food right
-            game.food.y < game.head.y,  # food up
-            game.food.y > game.head.y,  # food down
-            
-            #food vision
-            (tail.x == head.x) and (tail.y > head.y), 
-            (tail.x == head.x) and (tail.y < head.y), 
-            (tail.y == head.y) and (tail.x > head.x), 
-            (tail.y == head.y) and (tail.x < head.x), 
-            
-            tail_incross and (x_diff_tail > 0), 
-            tail_incross and (x_diff_tail < 0), 
-            tail_incross and (y_diff_tail > 0), 
-            tail_incross and (y_diff_tail < 0),
 
-            #tail vision
-            (game.food.x == head.x) and (game.food.y > head.y), 
-            (game.food.x == head.x) and (game.food.y < head.y), 
-            (game.food.y == head.y) and (game.food.x > head.x), 
-            (game.food.y == head.y) and (game.food.x < head.x), 
-            
-            food_incross and (x_diff_food > 0), 
-            food_incross and (x_diff_food < 0), 
-            food_incross and (y_diff_food > 0), 
-            food_incross and (y_diff_food < 0),
+            food_part[0],
+            food_part[1],
+            food_part[2],
+            food_part[3],
+            food_part[4],
+            food_part[5],
+            food_part[6],
+            food_part[7],
             
             snake_part[0],
             snake_part[1],
@@ -169,7 +151,16 @@ class Agent:
             snake_part[4],
             snake_part[5],
             snake_part[6],
-            snake_part[7]
+            snake_part[7],
+
+            head.x,
+            head.y,
+            w - head.x,
+            h - head.y,
+            min(head.x, head.y) * 1.414,
+            min(w-head.x, head.y) * 1.414,
+            min(head.x, h-head.y) * 1.414,
+            min(w-head.x, h-head.y) * 1.414
             
             ]
 
@@ -238,7 +229,7 @@ def train():
             agent.n_games += 1
             agent.train_long_memory()
 
-            if score >= record:
+            if score >= record and SAVE:
                 record = score
                 agent.model.save()
                 print("====================SAVE MODEL====================")

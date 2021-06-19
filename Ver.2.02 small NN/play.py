@@ -11,13 +11,14 @@ os.environ["KMP_DUPLICATE_LIB_OK"]  =  "TRUE"
 
 MAX_MEMORY = 1_000_000
 BATCH_SIZE = 1000
-LR = 0.0003
+LR = 0.00005
 
 w = 640
 h = 640
 
 LOAD = 1
 SAVE = 1
+TRAIN = 1
 
 class Agent:
 
@@ -271,21 +272,23 @@ def train():
         state_new = agent.get_state(game)
 
         # train short memory
-        agent.train_short_memory(state_old, final_move, reward, state_new, done)
+        if TRAIN:
+            agent.train_short_memory(state_old, final_move, reward, state_new, done)
 
         # remember
-        agent.remember(state_old, final_move, reward, state_new, done)
+        if TRAIN:
+            agent.remember(state_old, final_move, reward, state_new, done)
 
         if done:
             # train long memory, plot result
             game.reset()
             agent.n_games += 1
-            agent.train_long_memory()
-
-            if score >= record and SAVE:
-                record = score
-                agent.model.save()
-                print("====================SAVE MODEL====================")
+            if TRAIN:
+                agent.train_long_memory()
+                if score >= record and SAVE:
+                    record = score
+                    agent.model.save()
+                    print("====================SAVE MODEL====================")
 
             agent.model.save('newest.pth')
             print('Game', agent.n_games, 'Score', score, 'Record:', record)

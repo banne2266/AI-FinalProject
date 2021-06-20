@@ -11,10 +11,10 @@ os.environ["KMP_DUPLICATE_LIB_OK"]  =  "TRUE"
 
 MAX_MEMORY = 1_000_000
 BATCH_SIZE = 1000
-LR = 0.0003
+LR = 0.0002
 
-w = 640
-h = 640
+w = 400
+h = 400
 
 LOAD = 1
 SAVE = 1
@@ -25,9 +25,9 @@ class Agent:
     def __init__(self, load = False):
         self.n_games = 0
         self.epsilon = 0 # randomness
-        self.gamma = 0.8 # discount rate
+        self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Linear_QNet(46, 36, 3)
+        self.model = Linear_QNet(38, 32, 3)
         if load:
             print("====================LOAD MODEL====================")
             self.model.load_state_dict(torch.load('./model/model.pth'))
@@ -202,17 +202,6 @@ class Agent:
             game.food.x > game.head.x,  # food right
             game.food.y < game.head.y,  # food up
             game.food.y > game.head.y,  # food down
-            
-            #food vision
-            (tail.x == head.x) and (tail.y > head.y), 
-            (tail.x == head.x) and (tail.y < head.y), 
-            (tail.y == head.y) and (tail.x > head.x), 
-            (tail.y == head.y) and (tail.x < head.x), 
-            
-            tail_incross and (x_diff_tail > 0 and y_diff_tail > 0), 
-            tail_incross and (x_diff_tail < 0 and y_diff_tail > 0), 
-            tail_incross and (x_diff_tail > 0 and y_diff_tail < 0), 
-            tail_incross and (x_diff_tail < 0 and y_diff_tail < 0),
 
             #tail vision
             (game.food.x == head.x) and (game.food.y > head.y), 

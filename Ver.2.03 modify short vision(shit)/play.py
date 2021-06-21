@@ -11,10 +11,10 @@ os.environ["KMP_DUPLICATE_LIB_OK"]  =  "TRUE"
 
 MAX_MEMORY = 1_000_000
 BATCH_SIZE = 1000
-LR = 0.0002
+LR = 0.0004
 
-w = 400
-h = 400
+w = 200
+h = 200
 
 LOAD = 1
 SAVE = 1
